@@ -28,7 +28,11 @@ class ProductController extends Controller
 
     private const RETAIL_OPERATORS = ['AKSESORIS', 'HANDPHONE'];
 
-    private const VALIDITY_DAYS = [1, 2, 3, 5, 7, 14, 28, 30];
+    private const VALIDITY_DAYS = [
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+        11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+        21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+    ];
 
     private const LOGOS = [
         'TELKOMSEL' => 'telkomsel.svg', 'BYU' => 'byu.svg', 'INDOSAT' => 'indosat.svg',

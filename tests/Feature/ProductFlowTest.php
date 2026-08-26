@@ -557,6 +557,33 @@ class ProductFlowTest extends TestCase
             ->assertSee('Halaman 1 dari 2')->assertSee('Berikutnya');
     }
 
+    public function test_all_operators_can_create_packages_with_any_validity_from_one_to_thirty_days(): void
+    {
+        $outlet = Outlet::create(['name' => 'Outlet Masa Aktif', 'code' => 'VALIDITY']);
+        $owner = User::factory()->create(['outlet_id' => $outlet->id, 'role' => 'owner']);
+
+        foreach (['TELKOMSEL', 'BYU', 'INDOSAT', 'XL', 'TRI', 'SMARTFREN', 'AXIS'] as $index => $operator) {
+            $validity = $index % 2 === 0 ? 4 : 29;
+
+            $this->actingAs($owner)->post(route('products.store'), [
+                'operator' => $operator,
+                'category' => 'Voucher Internet',
+                'quota_gb' => $index + 1,
+                'validity_days' => $validity,
+                'cost_price' => 5000,
+                'selling_price' => 7000,
+                'stock' => 1,
+                'is_active' => 1,
+            ])->assertRedirect();
+
+            $this->assertDatabaseHas('products', [
+                'outlet_id' => $outlet->id,
+                'operator' => $operator,
+                'validity_days' => $validity,
+            ]);
+        }
+    }
+
     public function test_user_cannot_edit_another_outlets_product(): void
     {
         $first = Outlet::create(['name' => 'Satu', 'code' => 'ONE']);
