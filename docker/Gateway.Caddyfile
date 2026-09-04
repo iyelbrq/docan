@@ -30,10 +30,11 @@
 		fail_duration 15s
 		max_fails 3
 
-		# Kirim IP pelanggan asli + skema HTTPS ke aplikasi Laravel supaya
-		# rate limit dihitung per kasir dan url() memakai https (bukan mixed content).
+		# Kirim IP pelanggan asli supaya rate limit dihitung per kasir.
+		# X-Forwarded-Proto tidak dipaksa di sini: Caddy meneruskan nilai asli
+		# dari cloudflared (https di server) dan tetap http saat diakses langsung
+		# tanpa TLS (mis. localhost), jadi tidak ada redirect https yang salah.
 		header_up X-Forwarded-For {http.request.client_ip}
-		header_up X-Forwarded-Proto https
 	}
 
 	header {
