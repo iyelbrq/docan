@@ -2,7 +2,7 @@
 @section('title','Buat Akun Outlet — Docan') @section('body-class','login-body')
 @section('content')
 <main class="register-shell"><section class="register-panel"><a href="{{ route('login') }}" class="back-btn" aria-label="Kembali">←</a><div class="mobile-brand visible"><span class="brand-mark">D</span><b>Docan</b></div><span class="eyebrow green">DAFTAR OUTLET</span><h1>Buat akun outlet</h1><p class="muted">Satu akun Owner untuk mulai mengatur kasir, produk, stok, dan laporan.</p>@if($errors->any())<div class="alert error">{{ $errors->first() }}</div>@endif
-<form method="POST" action="{{ route('register.submit') }}" class="register-form">@csrf
+<form method="POST" action="{{ route('register.submit', [], false) }}" class="register-form" data-submit-once>@csrf
 <div class="form-row"><div class="form-group"><label for="outlet_name">Nama outlet</label><input id="outlet_name" name="outlet_name" value="{{ old('outlet_name') }}" maxlength="120" required></div><div class="form-group"><label for="owner_name">Nama pemilik</label><input id="owner_name" name="owner_name" value="{{ old('owner_name') }}" maxlength="120" required></div></div>
 <div class="form-row region-row">
     <div class="form-group searchable-region">
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const requestId = ++emailRequest;
         emailTimer = setTimeout(async () => {
             try {
-                const response = await fetch(@json(route('register.email.check')), {
+                const response = await fetch(@json(route('register.email.check', [], false)), {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const requestId = ++sfCodeRequest;
         sfCodeTimer = setTimeout(async () => {
             try {
-                const response = await fetch(@json(route('register.sf-code.check')), {
+                const response = await fetch(@json(route('register.sf-code.check', [], false)), {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',

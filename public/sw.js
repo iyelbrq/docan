@@ -1,4 +1,4 @@
-const CACHE = "docan-v142";
+const CACHE = "docan-v143";
 const ASSETS = [
     "/css/app.css?v=76",
     "/css/upgrade.css?v=76",
@@ -20,7 +20,7 @@ const ASSETS = [
     "/css/business.css?v=76",
     "/css/business-extra.css?v=78",
     "/css/transaction-sync.css?v=2",
-    "/js/app.js?v=98",
+    "/js/app.js?v=99",
     "/js/transaction-sync.js?v=2",
     "/js/product-stock.js?v=1",
     "/icon-192.png",

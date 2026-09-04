@@ -146,6 +146,32 @@ document.addEventListener("DOMContentLoaded", () => {
         }),
     );
 
+    // Cegah submit ganda pada form auth (login, daftar, reset password): setelah
+    // dikirim, tombolnya dikunci sebentar supaya ketukan berulang di koneksi
+    // lambat tidak menembak server berkali-kali dan kena rate limit (429).
+    document.querySelectorAll("form[data-submit-once]").forEach((form) => {
+        form.addEventListener("submit", () => {
+            const buttons = form.querySelectorAll(
+                'button[type="submit"], button:not([type]), input[type="submit"]',
+            );
+            buttons.forEach((button) => {
+                if (button.disabled) return;
+                button.disabled = true;
+                button.dataset.lockedLabel = button.textContent;
+                if (button.tagName === "BUTTON")
+                    button.textContent = "Memproses…";
+            });
+            window.setTimeout(() => {
+                buttons.forEach((button) => {
+                    if (button.dataset.lockedLabel === undefined) return;
+                    button.disabled = false;
+                    button.textContent = button.dataset.lockedLabel;
+                    delete button.dataset.lockedLabel;
+                });
+            }, 8000);
+        });
+    });
+
     document
         .querySelectorAll("[data-toggle-password]")
         .forEach((passwordToggle) => {
