@@ -49,6 +49,7 @@ Route::middleware(['auth', 'outlet.active'])->group(function () {
 });
 Route::middleware(['auth', 'outlet.active', 'owner'])->group(function () {
     Route::post('/products/{product}/stock', [ProductController::class, 'addStock'])->name('products.stock');
+    Route::post('/products/stock/bulk', [ProductController::class, 'bulkAddStock'])->name('products.stock.bulk');
     Route::post('/products/{product}/price', [ProductController::class, 'updatePrice'])->name('products.price');
     Route::delete('/products/bulk', [ProductController::class, 'bulkDestroy'])->name('products.bulk.destroy');
     Route::resource('products', ProductController::class)->except(['show', 'index']);

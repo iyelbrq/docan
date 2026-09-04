@@ -22,7 +22,7 @@ x-app-environment: &app-environment
     MAIL_FROM_NAME: "${MAIL_FROM_NAME:-Docan}"
 
     DB_CONNECTION: "${DB_CONNECTION:-pgsql}"
-    DB_HOST: "${DB_HOST:-database}"
+    DB_HOST: "${DB_HOST:-host.docker.internal}"
     DB_PORT: "${DB_PORT:-5432}"
     DB_DATABASE: "${DB_DATABASE:-sakukasir}"
     DB_USERNAME: "${DB_USERNAME:-sakukasir}"
@@ -59,10 +59,13 @@ x-app-base: &app-base
         - app_storage:/app/storage
 
     depends_on:
-        database:
-            condition: service_healthy
         redis:
             condition: service_healthy
+
+    # Database dijalankan di luar compose ini (lihat DB_HOST pada .env).
+    # host.docker.internal menunjuk ke host tempat PostgreSQL tersebut listen.
+    extra_hosts:
+        - "host.docker.internal:host-gateway"
 
     security_opt:
         - no-new-privileges:true
@@ -166,51 +169,6 @@ services:
                 limits:
                     memory: "${SCHEDULER_MEMORY_LIMIT:-256M}"
 
-    database:
-        image: postgres:17-alpine
-        restart: unless-stopped
-
-        command:
-            - postgres
-            - -c
-            - max_connections=250
-            - -c
-            - shared_buffers=256MB
-            - -c
-            - effective_cache_size=768MB
-            - -c
-            - work_mem=4MB
-            - -c
-            - maintenance_work_mem=64MB
-            - -c
-            - checkpoint_completion_target=0.9
-            - -c
-            - wal_compression=on
-
-        environment:
-            POSTGRES_DB: "${DB_DATABASE:-sakukasir}"
-            POSTGRES_USER: "${DB_USERNAME:-sakukasir}"
-            POSTGRES_PASSWORD: "${DB_PASSWORD:-docan-local-password}"
-
-        volumes:
-            - postgres_data:/var/lib/postgresql/data
-
-        healthcheck:
-            test:
-                [
-                    "CMD-SHELL",
-                    "pg_isready -U ${DB_USERNAME:-sakukasir} -d ${DB_DATABASE:-sakukasir}",
-                ]
-            interval: 5s
-            timeout: 5s
-            retries: 15
-            start_period: 10s
-
-        shm_size: 256mb
-
-        security_opt:
-            - no-new-privileges:true
-
     redis:
         image: redis:7.4-alpine
         restart: unless-stopped
@@ -265,9 +223,6 @@ services:
 volumes:
     app_storage:
         name: "${APP_STORAGE_VOLUME_NAME:-docan_app_storage}"
-
-    postgres_data:
-        name: "${POSTGRES_VOLUME_NAME:-kasir-outlet_postgres_data}"
 
     redis_data:
         name: "${REDIS_VOLUME_NAME:-docan_redis_data}"

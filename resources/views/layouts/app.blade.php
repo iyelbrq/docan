@@ -13,4 +13,4 @@
     @stack('styles')
     <link rel="stylesheet" href="/css/theme-font.css?v=1">
     <title>@yield('title','Docan')</title>
-</head><body class="@yield('body-class')">@yield('content')@stack('vendor-scripts')<script src="/js/app.js?v=97" defer></script><script src="/js/transaction-sync.js?v=2" defer></script>@stack('scripts')</body></html>
+</head><body class="@yield('body-class')">@yield('content')@stack('vendor-scripts')<script src="/js/app.js?v=98" defer></script><script src="/js/transaction-sync.js?v=2" defer></script>@stack('scripts')</body></html>

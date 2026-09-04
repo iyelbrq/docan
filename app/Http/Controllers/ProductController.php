@@ -8,6 +8,7 @@ use App\Models\ProductStockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -191,6 +192,7 @@ class ProductController extends Controller
             $variant = $source->replicate();
             $variant->stock = 0;
             $variant->is_active = true;
+            $variant->image_path = null;
 
             return $this->formView($variant);
         }
@@ -217,6 +219,7 @@ class ProductController extends Controller
             $data['name'] = $this->productName($data);
         }
         $product = Product::create([...$data, 'outlet_id' => $request->user()->outlet_id, 'is_active' => $request->boolean('is_active')]);
+        $this->handlePhotoUpload($request, $product, in_array($data['operator'], self::RETAIL_OPERATORS, true));
         if ($product->stock > 0) {
             $this->recordMovement($product, $request, 'initial', $product->stock, 0, $product->stock, 'Stok awal produk');
             $this->recordStockPurchase($product, $request, (int) $product->stock);
@@ -266,6 +269,7 @@ class ProductController extends Controller
                 }
             }
         });
+        $this->handlePhotoUpload($request, $product, in_array($product->operator, self::RETAIL_OPERATORS, true));
 
         return redirect()->route('products.index', array_filter([
             'group' => $request->string('return_group')->toString(),
@@ -276,6 +280,9 @@ class ProductController extends Controller
     public function destroy(Request $request, Product $product)
     {
         $this->authorizeOutlet($request, $product);
+        if ($product->image_path) {
+            Storage::disk('public')->delete($product->image_path);
+        }
         $product->delete();
 
         return back()->with('success', 'Produk berhasil dihapus.');
@@ -297,6 +304,9 @@ class ProductController extends Controller
                 ->get();
 
             foreach ($products as $product) {
+                if ($product->image_path) {
+                    Storage::disk('public')->delete($product->image_path);
+                }
                 $product->delete();
             }
 
@@ -344,6 +354,74 @@ class ProductController extends Controller
         return back()->with('success', $message);
     }
 
+    public function bulkAddStock(Request $request)
+    {
+        abort_unless($request->user()->isOwner(), 403);
+        $data = $request->validate([
+            'direction' => ['nullable', Rule::in(['increase', 'decrease'])],
+            'items' => ['required', 'array', 'min:1', 'max:200'],
+            'items.*.product_id' => ['required', 'integer'],
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:1000000000000'],
+        ]);
+        $direction = $data['direction'] ?? 'increase';
+        $results = [];
+        $errors = [];
+
+        // Tiap baris diproses dalam transaksinya sendiri agar satu baris yang
+        // gagal (mis. stok tidak cukup untuk pengurangan) tidak membatalkan
+        // baris lain yang sudah valid.
+        foreach ($data['items'] as $item) {
+            try {
+                $results[] = DB::transaction(function () use ($item, $request, $direction) {
+                    $locked = Product::where('outlet_id', $request->user()->outlet_id)
+                        ->whereKey($item['product_id'])
+                        ->lockForUpdate()
+                        ->first();
+                    if (! $locked) {
+                        throw ValidationException::withMessages(['quantity' => 'Produk tidak ditemukan di outlet Anda.']);
+                    }
+                    $max = $locked->category === 'Saldo Provider' ? 1000000000000 : 10000;
+                    if ($item['quantity'] > $max) {
+                        throw ValidationException::withMessages(['quantity' => 'Jumlah melebihi batas yang diizinkan untuk produk ini.']);
+                    }
+                    $before = (int) $locked->stock;
+                    if ($direction === 'decrease' && $before < $item['quantity']) {
+                        throw ValidationException::withMessages(['quantity' => 'Jumlah pengurangan melebihi stok atau saldo yang tersedia.']);
+                    }
+                    $after = $direction === 'increase' ? $before + $item['quantity'] : $before - $item['quantity'];
+                    $locked->update(['stock' => $after]);
+                    $signedQuantity = $direction === 'increase' ? (int) $item['quantity'] : -(int) $item['quantity'];
+                    $this->recordMovement($locked, $request, $direction, $signedQuantity, $before, $after,
+                        $direction === 'increase' ? 'Penambahan massal' : 'Pengurangan massal');
+                    if ($direction === 'increase') {
+                        $this->recordStockPurchase($locked, $request, (int) $item['quantity']);
+                    }
+
+                    return ['id' => $locked->id, 'stock' => (int) $locked->stock];
+                });
+            } catch (ValidationException $exception) {
+                $errors[] = [
+                    'id' => (int) $item['product_id'],
+                    'message' => $exception->validator->errors()->first(),
+                ];
+            }
+        }
+
+        $message = count($results).' produk berhasil diperbarui'
+            .(count($errors) ? ', '.count($errors).' gagal.' : '.');
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'updated' => count($results),
+                'results' => $results,
+                'errors' => $errors,
+            ]);
+        }
+
+        return back()->with('success', $message);
+    }
+
     public function updatePrice(Request $request, Product $product)
     {
         abort_unless($request->user()->isOwner(), 403);
@@ -377,7 +455,16 @@ class ProductController extends Controller
             'account_number' => [Rule::requiredIf($isWalletBalance), 'nullable', 'string', 'max:40', 'regex:/^[0-9+ .-]+$/'],
             'cost_price' => ['required', 'integer', 'min:0'], 'selling_price' => ['required', 'integer', 'gte:cost_price'],
             'stock' => ['required', 'integer', 'min:0', 'max:1000000000000'],
-        ], ['selling_price.gte' => 'Harga jual tidak boleh lebih kecil dari modal.']);
+            'photo' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:4096'],
+            'remove_photo' => ['sometimes', 'boolean'],
+        ], [
+            'selling_price.gte' => 'Harga jual tidak boleh lebih kecil dari modal.',
+            'photo.image' => 'Foto produk harus berupa gambar.',
+            'photo.mimes' => 'Foto produk harus berformat JPG, PNG, atau WebP.',
+            'photo.max' => 'Ukuran foto produk maksimal 4 MB.',
+        ]);
+        // File dan flag tidak disimpan langsung ke kolom products; ditangani oleh handlePhotoUpload().
+        unset($data['photo'], $data['remove_photo']);
         if ($isBalance) {
             $accountNumber = $isWalletBalance ? $this->normalizeAccountNumber((string) ($data['account_number'] ?? '')) : null;
             $balanceName = $this->channelName($data['operator']).($accountNumber ? ' · '.$accountNumber : '');
@@ -445,6 +532,31 @@ class ProductController extends Controller
     private function authorizeOutlet(Request $request, Product $product): void
     {
         abort_unless($product->outlet_id === $request->user()->outlet_id, 404);
+    }
+
+    /**
+     * Simpan/ganti/hapus foto produk retail (Aksesoris HP & Handphone).
+     * File disimpan pada disk "public" di storage/app/public/products/{outlet}.
+     */
+    private function handlePhotoUpload(Request $request, Product $product, bool $isRetail): void
+    {
+        if (! $isRetail) {
+            return;
+        }
+        if ($request->hasFile('photo')) {
+            $previous = $product->image_path;
+            $path = $request->file('photo')->store('products/'.$product->outlet_id, 'public');
+            $product->update(['image_path' => $path]);
+            if ($previous && $previous !== $path) {
+                Storage::disk('public')->delete($previous);
+            }
+
+            return;
+        }
+        if ($request->boolean('remove_photo') && $product->image_path) {
+            Storage::disk('public')->delete($product->image_path);
+            $product->update(['image_path' => null]);
+        }
     }
 
     private function channelName(string $operator): string

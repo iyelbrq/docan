@@ -78,6 +78,8 @@ class PosController extends Controller
 
         $products = Product::where('outlet_id', $request->user()->outlet_id)
             ->where('is_active', true)->orderBy('selling_price')->get();
+        // Sertakan URL foto (produk retail) pada payload JSON kasir.
+        $products->each->append('image_url');
         $counts = $products->groupBy('operator')->map->count();
         $providers = $providers->map(fn ($provider) => [...$provider, 'count' => $counts[$provider['id']] ?? 0]);
         $frequentProducts = Product::query()

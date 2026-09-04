@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
-    protected $fillable = ['outlet_id', 'operator', 'category', 'name', 'brand', 'quota_gb', 'validity_days', 'sku', 'account_number', 'cost_price', 'selling_price', 'stock', 'is_active'];
+    protected $fillable = ['outlet_id', 'operator', 'category', 'name', 'brand', 'quota_gb', 'validity_days', 'sku', 'account_number', 'image_path', 'cost_price', 'selling_price', 'stock', 'is_active'];
 
     protected function casts(): array
     {
@@ -38,5 +39,10 @@ class Product extends Model
     public function getProfitAttribute(): int
     {
         return $this->selling_price - $this->cost_price;
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->image_path ? Storage::disk('public')->url($this->image_path) : null;
     }
 }

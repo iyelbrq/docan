@@ -1475,7 +1475,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const card = document.createElement("article"),
                 head = document.createElement("header");
             card.className = "cashier-product-card";
-            head.innerHTML = `<div><b>${variants[0].brand ? `${escapeHtml(variants[0].brand)} · ` : ""}${escapeHtml(variants[0].name)}</b><small>${operator === "ALL_PROVIDER" ? `${escapeHtml(providerNames[variants[0].operator] || variants[0].operator)} · ` : ""}${variants.length} varian harga</small></div>`;
+            const cardPhoto = variants[0].image_url
+                ? `<img class="cashier-product-photo" src="${escapeHtml(variants[0].image_url)}" alt="" loading="lazy">`
+                : "";
+            head.innerHTML = `${cardPhoto}<div><b>${variants[0].brand ? `${escapeHtml(variants[0].brand)} · ` : ""}${escapeHtml(variants[0].name)}</b><small>${operator === "ALL_PROVIDER" ? `${escapeHtml(providerNames[variants[0].operator] || variants[0].operator)} · ` : ""}${variants.length} varian harga</small></div>`;
             card.appendChild(head);
             const rows = document.createElement("div");
             rows.className = "cashier-variant-list";
@@ -1829,7 +1832,10 @@ document.addEventListener("DOMContentLoaded", () => {
             ),
             cards = items.flatMap((item) => item.cardNumbers || []),
             reviewItems = document.querySelector("#review-items");
-        document.querySelector("#review-logo").src = activeLogo;
+        document.querySelector("#review-logo").src =
+            items.length === 1 && items[0].product.image_url
+                ? items[0].product.image_url
+                : activeLogo;
         document.querySelector("#review-category").textContent =
             `${new Set(items.map((item) => item.product.operator)).size > 1 ? "Multi Provider" : items[0].product.operator} · ${items.length > 1 ? "Pesanan grosir" : items[0].product.category}`;
         document.querySelector("#review-product").textContent =

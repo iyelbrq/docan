@@ -1,6 +1,15 @@
 @extends('layouts.app')
 @section('title', 'Kasir — Docan') @section('body-class', 'pos-body')
 @section('content')
+    @push('styles')
+        <style>
+            .cashier-product-card>header{display:flex;align-items:center;gap:12px}
+            .cashier-product-photo{width:52px;height:52px;border-radius:12px;object-fit:cover;border:1px solid #ebe5dc;flex:0 0 auto}
+            .cashier-product-card>header>div{min-width:0}
+            .frequent-photo{width:36px;height:36px;border-radius:9px;object-fit:cover;border:1px solid var(--line);display:block;margin:6px 0 2px}
+            #review-logo[src*="/storage/"]{object-fit:cover}
+        </style>
+    @endpush
     @if (session('prompt_pwa'))
         <div class="pwa-install" id="pwa-install" hidden>
             <div class="pwa-install-card"><button type="button" class="pwa-install-close" id="pwa-install-close"
@@ -111,7 +120,7 @@
                         <div class="frequent-row">
                             @foreach ($frequentProducts as $item)
                                 <button type="button" class="frequent-card" data-operator="{{ $item->operator }}"
-                                    data-quick-product="{{ $item->id }}"><span>{{ $item->operator }}</span><b>{{ $item->name }}</b><strong>Rp
+                                    data-quick-product="{{ $item->id }}"><span>{{ $item->operator }}</span>@if ($item->image_url)<img class="frequent-photo" src="{{ $item->image_url }}" alt="" loading="lazy">@endif<b>{{ $item->name }}</b><strong>Rp
                                         {{ number_format($item->selling_price, 0, ',', '.') }}</strong><i>{{ $item->sales_count }}×
                                         dipilih</i></button>
                             @endforeach

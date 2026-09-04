@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs
+mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs storage/app/public
 chown -R www-data:www-data storage bootstrap/cache
 
 if [ -z "${APP_KEY:-}" ]; then
@@ -35,6 +35,9 @@ if [ "${DB_CONNECTION:-}" = "pgsql" ]; then
         sleep 2
     done
 fi
+
+# Symlink public/storage -> storage/app/public agar foto produk dapat diakses lewat web.
+php artisan storage:link --force >/dev/null 2>&1 || true
 
 if [ "${RUN_MIGRATIONS:-true}" = "true" ]; then
     php artisan migrate --force --isolated
