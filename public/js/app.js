@@ -449,6 +449,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Point-of-sale product selection, cart, balance, and checkout flow.
     const root = document.querySelector(".app-shell[data-products]");
     if (!root) return;
+    const isOwner = root.dataset.role === "owner";
     const saleForm = document.querySelector("#sale-form");
     saleForm.addEventListener("submit", (event) => {
         if (saleForm.dataset.submitting === "true") {
@@ -1527,7 +1528,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         "product-option" +
                         (item ? " selected" : "") +
                         (soldOut ? " sold-out" : "");
-                    button.innerHTML = `<span><small>${soldOut ? "Stok habis" : `Stok ${new Intl.NumberFormat("id-ID").format(product.stock)}`} · Modal ${rupiah(product.cost_price)}</small></span><strong>${rupiah(product.selling_price)}<small>${soldOut ? "Belum bisa dijual" : `Untung ${rupiah(product.selling_price - product.cost_price)}`}</small></strong>`;
+                    const priceDetail = soldOut
+                        ? "Belum bisa dijual"
+                        : isOwner
+                          ? `Untung ${rupiah(product.selling_price - product.cost_price)}`
+                          : "";
+                    button.innerHTML = `<span><small>${soldOut ? "Stok habis" : `Stok ${new Intl.NumberFormat("id-ID").format(product.stock)}`} · Modal ${rupiah(product.cost_price)}</small></span><strong>${rupiah(product.selling_price)}${priceDetail ? `<small>${priceDetail}</small>` : ""}</strong>`;
                     if (!soldOut)
                         button.addEventListener("click", () =>
                             selectProduct(product),

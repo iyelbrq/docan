@@ -387,6 +387,7 @@ class ProductFlowTest extends TestCase
     {
         $outlet = Outlet::create(['name' => 'Outlet Role', 'code' => 'ROLE', 'login_id' => 'ROLE-001']);
         $owner = User::factory()->create(['outlet_id' => $outlet->id, 'role' => 'owner']);
+        $this->actingAs($owner)->get(route('pos'))->assertOk()->assertSee('Omset / laba');
 
         $this->actingAs($owner)->post(route('settings.frontliners.store'), [
             'name' => 'FL Pagi', 'login_id' => 'ROLE-001-FL01', 'password' => 'Front123!', 'password_confirmation' => 'Front123!',
@@ -394,7 +395,7 @@ class ProductFlowTest extends TestCase
         $frontliner = User::where('outlet_id', $outlet->id)->where('role', 'frontliner')->firstOrFail();
         $this->assertSame('ROLE-001-FL01', $frontliner->login_id);
 
-        $this->actingAs($frontliner)->get(route('pos'))->assertOk()->assertSee('Pilih Provider');
+        $this->actingAs($frontliner)->get(route('pos'))->assertOk()->assertSee('Pilih Provider')->assertDontSee('Omset / laba');
         $this->actingAs($frontliner)->get(route('products.index'))->assertRedirect(route('products.index', ['stock' => 1]));
         $product = Product::create(['outlet_id' => $outlet->id, 'operator' => 'TELKOMSEL', 'category' => 'Voucher Internet',
             'name' => '5GB · 1D', 'quota_gb' => 5, 'validity_days' => 1, 'cost_price' => 5000, 'selling_price' => 7000, 'stock' => 10]);

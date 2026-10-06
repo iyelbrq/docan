@@ -48,8 +48,10 @@
                 <div><b>Docan</b><small>{{ auth()->user()->outlet?->name }}</small></div>
             </div>
             <div class="header-right">
-                <div class="revenue"><span>Omset / laba</span><strong>Rp {{ number_format($omset, 0, ',', '.') }}
-                        <em>+{{ number_format($profit / 1000, 0) }}K</em></strong></div>
+                @if (auth()->user()->isOwner())
+                    <div class="revenue"><span>Omset / laba</span><strong>Rp {{ number_format($omset, 0, ',', '.') }}
+                            <em>+{{ number_format($profit / 1000, 0) }}K</em></strong></div>
+                @endif
                 @if (auth()->user()->isOwner())
                     <a class="header-add" href="{{ route('products.create') }}">＋ Produk</a>
                 @endif
