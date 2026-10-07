@@ -51,6 +51,9 @@
                 @if (auth()->user()->isOwner())
                     <div class="revenue"><span>Omset / laba</span><strong>Rp {{ number_format($omset, 0, ',', '.') }}
                             <em>+{{ number_format($profit / 1000, 0) }}K</em></strong></div>
+                @else
+                    <div class="revenue"><span>Omset</span><strong>Rp {{ number_format($omset, 0, ',', '.') }}</strong>
+                    </div>
                 @endif
                 @if (auth()->user()->isOwner())
                     <a class="header-add" href="{{ route('products.create') }}">＋ Produk</a>
