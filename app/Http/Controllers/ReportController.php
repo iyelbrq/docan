@@ -187,7 +187,7 @@ class ReportController extends Controller
             ->whereBetween('created_at', [$startedAt, $endedAt])
             ->orderBy('created_at')
             ->with('product:id,name,category,operator')
-            ->get(['id', 'product_id', 'created_at', 'provider', 'product_type', 'nominal', 'quantity', 'price', 'cost_price', 'profit']);
+            ->get(['id', 'product_id', 'created_at', 'provider', 'product_type', 'transaction_action', 'nominal', 'quantity', 'price', 'cost_price', 'profit']);
         $expenses = BusinessEntry::with('category:id,name')
             ->where('outlet_id', $request->user()->outlet_id)
             ->where('type', 'operational-expense')

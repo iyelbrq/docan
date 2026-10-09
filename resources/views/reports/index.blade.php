@@ -263,12 +263,12 @@
                                 <div>
                                     <span>{{ $item->created_at->format('H:i') }}<small>{{ $item->created_at->format('d/m') }}</small></span>
                                     <em class="activity-label sale">Penjualan</em>
-                                    <b>{{ $item->product?->name ?? $item->product_type }}</b>
+                                    <b>{{ $item->product?->name ?? ($item->transaction_action ? match($item->transaction_action) { 'receive_payment' => 'Terima Pembayaran', 'cash_withdrawal' => 'Tarik Tunai', 'bill_payment' => 'Bayar Tagihan', 'customer_topup' => 'Top Up Pelanggan', default => $item->product_type } : $item->product_type) }}</b>
                                     <small>{{ $item->provider }} · {{ $item->customer_number }}</small>
                                 </div>
                                 <div class="transaction-meta">
                                     <span>Rp {{ number_format($item->price, 0, ',', '.') }}</span>
-                                    <small>Qty {{ number_format($item->quantity ?? 1) }} · Harga jual Rp {{ number_format($item->nominal, 0, ',', '.') }}</small>
+                                    <small>Qty {{ number_format($item->quantity ?? 1) }} · {{ $item->product_id ? 'Harga satuan' : 'Nominal' }} Rp {{ number_format($item->nominal, 0, ',', '.') }}</small>
                                     <small>Laba Rp {{ number_format($item->profit, 0, ',', '.') }}</small>
                                 </div>
                             </div>

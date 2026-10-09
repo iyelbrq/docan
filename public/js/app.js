@@ -472,19 +472,91 @@ document.addEventListener("DOMContentLoaded", () => {
         directSale = document.querySelector("#direct-sale"),
         nominalInput = document.querySelector("#nominal-input");
     const adminFeeField = document.querySelector("#admin-fee-field"),
-        adminFeeInput = document.querySelector("#admin-fee-input"),
+        directSellingPriceInput =
+            document.querySelector("#selling-price-input") ||
+            document.querySelector("#admin-fee-input"),
+        calculatedAdminFee = document.querySelector("#calculated-admin-fee"),
+        sellingPriceError = document.querySelector("#selling-price-error"),
         bonusField = document.querySelector("#bonus-field"),
         bonusInput = document.querySelector("#bonus-input"),
-        bonusOperators = ["DIGIPOS", "SIDIVA", "ISIMPEL", "RITA", "MULTI"],
-        adminFeeSelect = {
-            get value() {
-                return rawMoney(adminFeeInput?.value || "0");
-            },
-            set value(nextValue) {
-                if (adminFeeInput)
-                    adminFeeInput.value = String(nextValue ?? "0");
-            },
-        };
+        bonusOperators = ["DIGIPOS", "SIDIVA", "ISIMPEL", "RITA", "MULTI"];
+    let directMargin = 1000;
+    function updateCalculatedAdminFee() {
+        const nominal = rawMoney(nominalInput?.value || "0"),
+            selling = rawMoney(directSellingPriceInput?.value || "0"),
+            hasAdminField = adminFeeField && !adminFeeField.hidden;
+        if (!hasAdminField) {
+            if (calculatedAdminFee) calculatedAdminFee.textContent = rupiah(0);
+            if (sellingPriceError) sellingPriceError.hidden = true;
+            return 0;
+        }
+        if (nominal > 0 && selling > 0) {
+            const fee = selling - nominal;
+            if (fee < 0) {
+                if (calculatedAdminFee) {
+                    calculatedAdminFee.textContent = "Rp 0 (Di bawah nominal)";
+                    calculatedAdminFee.style.color = "#b53838";
+                }
+                if (sellingPriceError) {
+                    sellingPriceError.textContent =
+                        "Harga jual tidak boleh lebih kecil dari nominal.";
+                    sellingPriceError.hidden = false;
+                }
+                return 0;
+            }
+            directMargin = fee;
+            if (calculatedAdminFee) {
+                calculatedAdminFee.textContent = rupiah(fee);
+                calculatedAdminFee.style.color = "";
+            }
+            if (sellingPriceError) sellingPriceError.hidden = true;
+            return fee;
+        }
+        if (nominal > 0) {
+            if (calculatedAdminFee) {
+                calculatedAdminFee.textContent = rupiah(directMargin);
+                calculatedAdminFee.style.color = "";
+            }
+            if (sellingPriceError) sellingPriceError.hidden = true;
+            return directMargin;
+        }
+        if (calculatedAdminFee) {
+            calculatedAdminFee.textContent = rupiah(0);
+            calculatedAdminFee.style.color = "";
+        }
+        if (sellingPriceError) sellingPriceError.hidden = true;
+        return 0;
+    }
+    function syncSellingPriceFromNominal(keepMargin = true) {
+        if (!adminFeeField || adminFeeField.hidden) return;
+        const nominal = rawMoney(nominalInput?.value || "0");
+        if (nominal > 0) {
+            const margin = keepMargin
+                ? Math.max(1000, directMargin || 1000)
+                : 1000;
+            directMargin = margin;
+            if (directSellingPriceInput) {
+                directSellingPriceInput.value = formatMoney(nominal + margin);
+            }
+        } else if (directSellingPriceInput) {
+            directSellingPriceInput.value = "";
+        }
+        updateCalculatedAdminFee();
+    }
+    const adminFeeSelect = {
+        get value() {
+            const nominal = rawMoney(nominalInput?.value || "0"),
+                selling = rawMoney(directSellingPriceInput?.value || "0");
+            if (selling > 0 && nominal > 0) {
+                return Math.max(0, selling - nominal);
+            }
+            return directMargin;
+        },
+        set value(nextValue) {
+            directMargin = Number(nextValue ?? 1000);
+            syncSellingPriceFromNominal(true);
+        },
+    };
     document.querySelectorAll(".provider-card").forEach((card) =>
         card.addEventListener(
             "click",
@@ -691,6 +763,17 @@ document.addEventListener("DOMContentLoaded", () => {
             document.querySelector("#direct-nominal").value = payload.nominal;
             document.querySelector("#direct-admin-fee").value =
                 payload.admin_fee || "";
+            if (nominalInput) {
+                nominalInput.value = formatMoney(payload.nominal);
+            }
+            if (directSellingPriceInput) {
+                directSellingPriceInput.value = formatMoney(
+                    Number(payload.nominal) + Number(payload.admin_fee || 0),
+                );
+            }
+            if (calculatedAdminFee) {
+                calculatedAdminFee.textContent = rupiah(payload.admin_fee || 0);
+            }
             document.querySelector("#direct-bonus").value = payload.bonus || "";
             balanceProductInput.value = payload.balance_product_id || "";
             walletActionInput.value = payload.transaction_action || "";
@@ -1357,8 +1440,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 walletOperators.includes(operator) ||
                 aggregatorCategories.includes(category)
             );
-            adminFeeSelect.value = "1000";
+            directMargin = 1000;
             nominalInput.value = "";
+            if (directSellingPriceInput) directSellingPriceInput.value = "";
+            updateCalculatedAdminFee();
             document.querySelector("#use-nominal").disabled = true;
             const chips = document.querySelector("#denomination-chips");
             chips.innerHTML = "";
@@ -1418,6 +1503,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     button.textContent = rupiah(item.nominal);
                     button.addEventListener("click", () => {
                         nominalInput.value = formatMoney(item.nominal);
+                        syncSellingPriceFromNominal();
                         validateDirectAmount();
                     });
                     chips.appendChild(button);
@@ -2192,6 +2278,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     function validateDirectAmount() {
         const nominal = rawMoney(nominalInput.value),
+            hasAdminField = adminFeeField && !adminFeeField.hidden,
+            selling = rawMoney(directSellingPriceInput?.value || "0"),
+            sellingInvalid =
+                hasAdminField && nominal >= 1000 && selling < nominal,
             account = selectedBalanceAccount(),
             wallet =
                 isFinancialService() &&
@@ -2209,10 +2299,20 @@ document.addEventListener("DOMContentLoaded", () => {
         balanceAccountError.hidden = !message;
         document.querySelector("#use-nominal").disabled =
             nominal < 1000 ||
+            sellingInvalid ||
             (usesBalance &&
                 (!account || (debit && Number(account.stock) < nominal)));
     }
-    nominalInput.addEventListener("input", validateDirectAmount);
+    nominalInput.addEventListener("input", () => {
+        syncSellingPriceFromNominal();
+        validateDirectAmount();
+    });
+    if (directSellingPriceInput) {
+        directSellingPriceInput.addEventListener("input", () => {
+            updateCalculatedAdminFee();
+            validateDirectAmount();
+        });
+    }
     directIdentityInput.addEventListener("input", () => {
         directIdentityInput.value = directIdentityInput.value
             .replace(/[^0-9A-Za-z.-]/g, "")
@@ -2225,11 +2325,19 @@ document.addEventListener("DOMContentLoaded", () => {
             selectedPpobService = null;
             directIdentityInput.value = "";
             nominalInput.value = "";
+            if (directSellingPriceInput) directSellingPriceInput.value = "";
+            updateCalculatedAdminFee();
             document.querySelector("#use-nominal").disabled = true;
             renderPpobServices();
         });
     document.querySelector("#use-nominal").addEventListener("click", () => {
         const nominal = rawMoney(nominalInput.value),
+            selling = rawMoney(directSellingPriceInput?.value || "0"),
+            hasAdminField =
+                adminFeeField &&
+                !adminFeeField.hidden &&
+                (walletOperators.includes(operator) ||
+                    aggregatorCategories.includes(category)),
             balanceAccount = selectedBalanceAccount(),
             wallet =
                 isFinancialService() &&
@@ -2239,6 +2347,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 bonusOperators.includes(operator),
             debit = recharge || walletActions[walletAction].direction < 0;
         if (nominal < 1000) return;
+        if (hasAdminField && selling < nominal) {
+            updateCalculatedAdminFee();
+            validateDirectAmount();
+            return;
+        }
         if (
             (wallet || recharge) &&
             (!balanceAccount ||
@@ -2255,11 +2368,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     : category,
             requiresProviderPrefix =
                 category !== "PPOB" && prefixChannels.includes(operator),
-            adminFee =
-                walletOperators.includes(operator) ||
-                aggregatorCategories.includes(category)
-                    ? Number(adminFeeSelect.value)
-                    : 0;
+            adminFee = hasAdminField ? Math.max(0, selling - nominal) : 0;
         if (category === "PPOB" && !selectedPpobService) {
             renderPpobServices();
             return;

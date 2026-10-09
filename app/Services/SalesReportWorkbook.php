@@ -33,8 +33,8 @@ class SalesReportWorkbook
                 : $writer->addNewSheetAndMakeItCurrent();
             $sheet->setName($sheetName);
             $sheet->setColumnWidth(24, 1);
-            $sheet->setColumnWidth(24, 2);
-            $sheet->setColumnWidth(38, 3);
+            $sheet->setColumnWidth(28, 2);
+            $sheet->setColumnWidth(40, 3);
             $sheet->setColumnWidth(15, 4, 5);
             $sheet->setColumnWidth(20, 6, 7, 8, 9, 10);
             $this->writeSheet(
@@ -165,6 +165,16 @@ class SalesReportWorkbook
             });
     }
 
+    private function actionLabel(?string $action): string
+    {
+        return match ($action) {
+            'receive_payment' => 'Terima Pembayaran',
+            'cash_withdrawal' => 'Tarik Tunai',
+            'bill_payment' => 'Bayar Tagihan',
+            default => 'Top Up Pelanggan',
+        };
+    }
+
     private function productGroup(object $transaction): string
     {
         $provider = strtoupper((string) ($transaction->provider ?? ''));
@@ -177,10 +187,14 @@ class SalesReportWorkbook
             return 'Handphone';
         }
         if (in_array($provider, ['MANDIRI', 'BRI', 'BNI', 'BTN', 'SEABANK', 'BANK_JAGO', 'ICBC', 'CCB', 'BANK_OF_CHINA'], true)) {
-            return 'Perbankan';
+            $action = $this->actionLabel($transaction->transaction_action ?? null);
+
+            return "Perbankan ({$action})";
         }
         if (in_array($provider, ['DANA', 'OVO', 'GOPAY', 'SHOPEEPAY', 'MAXIM', 'BRILINK', 'LINKAJA'], true)) {
-            return 'E-Wallet';
+            $action = $this->actionLabel($transaction->transaction_action ?? null);
+
+            return "E-Wallet ({$action})";
         }
         if ($transaction->product_id ?? null) {
             return 'Produk Provider';
@@ -194,6 +208,16 @@ class SalesReportWorkbook
         $product = $transaction->product ?? null;
         if ($product?->name) {
             return $transaction->provider.' · '.$product->name;
+        }
+
+        $provider = strtoupper((string) ($transaction->provider ?? ''));
+        $isFinancial = in_array($provider, ['DANA', 'OVO', 'GOPAY', 'SHOPEEPAY', 'MAXIM', 'BRILINK', 'LINKAJA', 'MANDIRI', 'BRI', 'BNI', 'BTN', 'SEABANK', 'BANK_JAGO', 'ICBC', 'CCB', 'BANK_OF_CHINA'], true);
+
+        if ($isFinancial) {
+            $action = $this->actionLabel($transaction->transaction_action ?? null);
+            $nominal = (int) ($transaction->nominal ?? 0);
+
+            return trim($transaction->provider.' · '.$action.($nominal > 0 ? ' · Rp '.number_format($nominal, 0, ',', '.') : ''));
         }
 
         $type = trim((string) ($transaction->product_type ?? 'Transaksi'));

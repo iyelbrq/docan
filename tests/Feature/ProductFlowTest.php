@@ -127,6 +127,85 @@ class ProductFlowTest extends TestCase
         unlink($path);
     }
 
+    public function test_sales_export_categorizes_e_wallet_and_banking_actions_clearly(): void
+    {
+        $outlet = Outlet::create(['name' => 'Outlet E-Wallet', 'code' => 'WALLET']);
+        $owner = User::factory()->create(['outlet_id' => $outlet->id, 'role' => 'owner']);
+
+        Transaction::create([
+            'user_id' => $owner->id,
+            'customer_number' => '081234567890',
+            'provider' => 'DANA',
+            'product_type' => 'Saldo E-Wallet',
+            'transaction_action' => 'cash_withdrawal',
+            'nominal' => 50000,
+            'price' => 53000,
+            'cost_price' => 50000,
+            'profit' => 3000,
+            'admin_fee' => 3000,
+        ]);
+
+        Transaction::create([
+            'user_id' => $owner->id,
+            'customer_number' => '081234567891',
+            'provider' => 'DANA',
+            'product_type' => 'Saldo E-Wallet',
+            'transaction_action' => 'customer_topup',
+            'nominal' => 20000,
+            'price' => 22000,
+            'cost_price' => 20000,
+            'profit' => 2000,
+            'admin_fee' => 2000,
+        ]);
+
+        Transaction::create([
+            'user_id' => $owner->id,
+            'customer_number' => '1234567890123',
+            'provider' => 'BRI',
+            'product_type' => 'Transfer Bank',
+            'transaction_action' => 'receive_payment',
+            'nominal' => 100000,
+            'price' => 103000,
+            'cost_price' => 100000,
+            'profit' => 3000,
+            'admin_fee' => 3000,
+        ]);
+
+        $date = now()->format('Y-m-d');
+        $response = $this->actingAs($owner)->get(route('reports.sales.export', [
+            'sales_from' => $date,
+            'sales_to' => $date,
+        ]));
+        $response->assertOk();
+
+        $path = tempnam(sys_get_temp_dir(), 'docan-wallet-xlsx-');
+        file_put_contents($path, $response->streamedContent());
+
+        $reader = new Reader;
+        $reader->open($path);
+        $dailyRows = [];
+        foreach ($reader->getSheetIterator() as $sheet) {
+            if ($sheet->getName() === 'Daily') {
+                foreach ($sheet->getRowIterator() as $row) {
+                    $dailyRows[] = array_map(fn ($cell) => $cell->getValue(), $row->getCells());
+                }
+            }
+        }
+        $reader->close();
+        unlink($path);
+
+        $groups = array_column(array_slice($dailyRows, 4), 1);
+        $products = array_column(array_slice($dailyRows, 4), 2);
+
+        $this->assertContains('E-Wallet (Tarik Tunai)', $groups);
+        $this->assertContains('E-Wallet (Top Up Pelanggan)', $groups);
+        $this->assertContains('Perbankan (Terima Pembayaran)', $groups);
+
+        $this->assertTrue(collect($products)->contains(fn ($p) => str_contains($p, 'DANA · Tarik Tunai · Rp 50.000')));
+        $this->assertTrue(collect($products)->contains(fn ($p) => str_contains($p, 'DANA · Top Up Pelanggan · Rp 20.000')));
+        $this->assertTrue(collect($products)->contains(fn ($p) => str_contains($p, 'BRI · Terima Pembayaran · Rp 100.000')));
+    }
+
     public function test_outlet_can_open_thermal_receipt_for_its_transaction(): void
     {
         $outlet = Outlet::create(['name' => 'Abdul Cell', 'code' => 'RECEIPT']);

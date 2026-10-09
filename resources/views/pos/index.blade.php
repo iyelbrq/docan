@@ -248,11 +248,15 @@
                                 yang dipilih.</small><em id="balance-account-error" hidden></em>
                         </fieldset>
                         <div class="nominal-input"><span>Rp</span><input id="nominal-input" type="text"
-                                inputmode="numeric" data-money-input placeholder="0"></div><label class="admin-fee-field"
-                            id="admin-fee-field" hidden><span>Biaya admin</span><input id="admin-fee-input"
-                                type="text" inputmode="numeric" data-money-input value="0"
-                                aria-label="Masukkan biaya admin"><small>Ditambahkan ke total pembayaran pelanggan dan
-                                laba.</small></label><label class="admin-fee-field" id="bonus-field" hidden><span>Bonus /
+                                inputmode="numeric" data-money-input placeholder="0"></div>
+                        <label class="admin-fee-field" id="admin-fee-field" hidden><span>Harga jual (total bayar)</span><input
+                                id="selling-price-input" type="text" inputmode="numeric" data-money-input value="0"
+                                aria-label="Masukkan harga jual"><small id="admin-fee-calc-note"><span
+                                    class="admin-fee-highlight">Biaya admin: <strong
+                                        id="calculated-admin-fee">Rp 0</strong></span> <span
+                                    class="admin-fee-formula">(Harga jual - Nominal)</span></small><em
+                                id="selling-price-error" hidden></em></label>
+                        <label class="admin-fee-field" id="bonus-field" hidden><span>Bonus /
                                 bintang</span><input id="bonus-input" type="text" inputmode="numeric" data-money-input
                                 value="0" aria-label="Masukkan bonus"><small>Bonus dari channel menambah laba, tetapi
                                 tidak ditagihkan kepada pelanggan.</small></label>
