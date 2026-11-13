@@ -301,7 +301,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         "CCB",
                         "BANK_OF_CHINA",
                     ].includes(operatorField.value),
-                identityLocked = productForm.dataset.identityLocked === "1";
+                identityLocked = productForm.dataset.identityLocked === "1",
+                voucherEditable = productForm.dataset.voucherEditable === "1";
             if (accessory) categoryField.value = "Aksesoris HP";
             if (phone) categoryField.value = "Handphone";
             document.querySelector("#accessory-builder").hidden =
@@ -328,14 +329,14 @@ document.addEventListener("DOMContentLoaded", () => {
             accountWrap.hidden = !walletBalance;
             accountField.required = walletBalance;
             document.querySelector("#package-builder").hidden =
-                retailProduct || balance || identityLocked;
+                retailProduct || balance || (identityLocked && !voucherEditable);
             document.querySelector("#price-panel").hidden = balance;
             document.querySelector("#active-product-field").hidden = balance;
             document.querySelector("#stock-label").textContent = balance
                 ? `Saldo awal ${channelName(operatorField.value)}`
                 : "Stok tersedia";
-            quotaInput.disabled = retailProduct || balance || identityLocked;
-            validityInput.disabled = retailProduct || balance || identityLocked;
+            quotaInput.disabled = retailProduct || balance || (identityLocked && !voucherEditable);
+            validityInput.disabled = retailProduct || balance || (identityLocked && !voucherEditable);
             customName.required = retailProduct;
             if (balance) {
                 productCost.value = "0";

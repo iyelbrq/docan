@@ -99,6 +99,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('/sales-forces', [AdminController::class, 'storeSalesForce'])->name('sales-forces.store');
     Route::put('/sales-forces/{salesForce}', [AdminController::class, 'updateSalesForce'])->name('sales-forces.update');
     Route::get('/transactions/export', [AdminController::class, 'export'])->name('export');
+    Route::get('/sf-ranking', [AdminController::class, 'dashboard'])->defaults('page', 'sf_ranking')->name('sf-ranking');
     Route::post('/denominations', [AdminController::class, 'storeDenomination'])->name('denominations.store');
     Route::put('/denominations/{denomination}', [AdminController::class, 'updateDenomination'])->name('denominations.update');
     Route::delete('/denominations/{denomination}', [AdminController::class, 'destroyDenomination'])->name('denominations.destroy');

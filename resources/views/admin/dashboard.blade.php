@@ -10,6 +10,7 @@
             <a href="{{ route('admin.outlets') }}" class="{{ $page==='outlets'?'active':'' }}"><span>▦</span>Outlet & User</a>
             <a href="{{ route('admin.transactions') }}" class="{{ $page==='transactions'?'active':'' }}"><span>↔</span>Transaksi</a>
             <a href="{{ route('admin.denominations') }}" class="{{ $page==='denominations'?'active':'' }}"><span>◫</span>Master Produk</a>
+            <a href="{{ route('admin.sf-ranking') }}" class="{{ $page==='sf_ranking'?'active':'' }}"><span>★</span>Ranking SF</a>
         </nav>
         <div class="sidebar-account"><span>{{ strtoupper(substr(auth()->user()->name,0,1)) }}</span><div><b>{{ auth()->user()->name }}</b><small>{{ auth()->user()->email }}</small></div><form method="POST" action="{{ route('logout') }}">@csrf<button title="Keluar">↪</button></form></div>
     </aside>
@@ -122,7 +123,57 @@
                 @if($transactions->hasPages())<nav class="pager"><a class="{{ $transactions->onFirstPage()?'disabled':'' }}" href="{{ $transactions->previousPageUrl()?:'#' }}">← Sebelumnya</a><span>Halaman {{ $transactions->currentPage() }} dari {{ $transactions->lastPage() }}</span><a class="{{ $transactions->hasMorePages()?'':'disabled' }}" href="{{ $transactions->nextPageUrl()?:'#' }}">Berikutnya →</a></nav>@endif
             </section>
 
-            @endif @if($page==='denominations')<section class="admin-panel" id="denominations">
+            @endif @if($page==='sf_ranking')<section class="admin-panel sf-ranking-panel" id="sf-ranking">
+                <div class="admin-panel-head">
+                    <div>
+                        <h2>Ranking Sales Force</h2>
+                        <p>Peringkat SF berdasarkan jumlah outlet aktif · Outlet aktif = ≥4 transaksi dalam 10 hari terakhir</p>
+                    </div>
+                    <span class="admin-count">{{ count($sfRanking) }} SF</span>
+                </div>
+                <div class="admin-table-wrap sf-ranking-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SF Code</th>
+                                <th>Nama SF</th>
+                                <th>Total Outlet</th>
+                                <th>Outlet Aktif</th>
+                                <th>Sudah Approved</th>
+                                <th>Total Transaksi</th>
+                                <th>Total Omzet</th>
+                                <th>Total Profit</th>
+                                <th>Outlet Pertama</th>
+                                <th>Outlet Terakhir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($sfRanking as $index => $sf)
+                            @php($activeRate = $sf->total_outlet > 0 ? round($sf->total_outlet_active / $sf->total_outlet * 100) : 0)
+                            <tr>
+                                <td><span class="sf-rank-badge {{ $index < 3 ? 'top-'.$index+1 : '' }}">{{ $index + 1 }}</span></td>
+                                <td><span class="outlet-id-badge">{{ $sf->sf_code }}</span></td>
+                                <td><b>{{ $sf->sf_name }}</b></td>
+                                <td><b>{{ number_format($sf->total_outlet) }}</b></td>
+                                <td>
+                                    <span class="sf-count active">{{ number_format($sf->total_outlet_active) }}</span>
+                                    <small class="sf-active-rate {{ $activeRate >= 50 ? 'rate-good' : ($activeRate >= 25 ? 'rate-mid' : 'rate-low') }}">{{ $activeRate }}%</small>
+                                </td>
+                                <td><span class="sf-count approved">{{ number_format($sf->total_outlet_approved) }}</span></td>
+                                <td>{{ number_format($sf->total_transaksi) }} trx</td>
+                                <td>Rp {{ number_format($sf->total_omzet, 0, ',', '.') }}</td>
+                                <td class="green-text">Rp {{ number_format($sf->total_profit, 0, ',', '.') }}</td>
+                                <td><small>{{ $sf->first_outlet_registered_at ? \Carbon\Carbon::parse($sf->first_outlet_registered_at)->format('d/m/Y') : '—' }}</small></td>
+                                <td><small>{{ $sf->last_outlet_registered_at ? \Carbon\Carbon::parse($sf->last_outlet_registered_at)->format('d/m/Y') : '—' }}</small></td>
+                            </tr>
+                            @empty
+                            <tr><td colspan="11" class="empty-state">Belum ada data SF.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>@endif @if($page==='denominations')<section class="admin-panel" id="denominations">
                 <div class="admin-panel-head"><div><h2>Master produk outlet</h2><p>Semua produk yang diatur outlet, termasuk modal, harga jual, dan stok.</p></div><div class="admin-head-actions"><a href="{{ route('admin.products.export',request()->only('product_outlet','product_search')) }}">↓ Download CSV</a><span class="admin-count">{{ $outlets->count() }} outlet</span></div></div>
                 <div class="master-outlet-directory">
                     <div class="master-outlet-heading"><div><h3>Daftar outlet Master Produk</h3><p>Terhubung otomatis dengan data Outlet & User.</p></div><span>{{ $outlets->count() }} outlet unik</span></div>

@@ -248,13 +248,24 @@ class ProductController extends Controller
     {
         $this->authorizeOutlet($request, $product);
         $data = $this->validated($request);
-        $data = array_replace($data, [
-            'operator' => $product->operator,
-            'category' => $product->category,
-            'name' => $product->name,
-            'quota_gb' => $product->quota_gb,
-            'validity_days' => $product->validity_days,
-        ]);
+
+        $isVoucherInternet = in_array($product->category, ['Voucher Internet', 'Kartu Paket'], true)
+            && ! in_array($product->operator, self::RETAIL_OPERATORS, true);
+
+        // Untuk produk Voucher Internet / Kartu Paket, izinkan kuota & masa aktif diubah
+        // dan regenerasi nama produk dari data baru. Selain itu (saldo, retail), tetap kunci.
+        if ($isVoucherInternet) {
+            $data['name'] = $this->productName($data);
+        } else {
+            $data = array_replace($data, [
+                'operator'     => $product->operator,
+                'category'     => $product->category,
+                'name'         => $product->name,
+                'quota_gb'     => $product->quota_gb,
+                'validity_days' => $product->validity_days,
+            ]);
+        }
+
         $this->ensureNotDuplicate($request, $data, $product->id);
         DB::transaction(function () use ($product, $data, $request) {
             $locked = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
@@ -272,7 +283,7 @@ class ProductController extends Controller
         $this->handlePhotoUpload($request, $product, in_array($product->operator, self::RETAIL_OPERATORS, true));
 
         return redirect()->route('products.index', array_filter([
-            'group' => $request->string('return_group')->toString(),
+            'group'    => $request->string('return_group')->toString(),
             'operator' => $request->string('return_operator')->toString(),
         ]))->with('success', 'Produk berhasil diperbarui.');
     }

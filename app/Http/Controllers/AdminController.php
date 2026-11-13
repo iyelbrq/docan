@@ -65,6 +65,11 @@ class AdminController extends Controller
             $denominations = Denomination::orderBy('operator')->orderBy('category')->orderBy('nominal')->get();
         }
 
+        $sfRanking = collect();
+        if ($page === 'sf_ranking') {
+            $sfRanking = $this->sfRankingQuery();
+        }
+
         $analytics = ['todayCount' => 0, 'todayTurnover' => 0, 'todayProfit' => 0, 'monthCount' => 0, 'monthTurnover' => 0, 'monthProfit' => 0, 'trend' => collect(), 'topOutlets' => collect(), 'outletUsers' => 0, 'operatorSales' => collect(), 'starterShare' => collect(), 'rechargeShare' => collect(), 'voucherComparison' => collect()];
         if ($page === 'dashboard') {
             // Data dashboard berisi Collection/model dan tidak boleh diserialisasi
@@ -94,7 +99,7 @@ class AdminController extends Controller
             });
         }
 
-        return view('admin.dashboard', [...$analytics, 'page' => $page, 'transactions' => $transactions, 'outlets' => $outlets, 'outletDirectory' => $outletDirectory, 'outletRegions' => config('outlet_regions', []), 'salesForceDirectory' => $salesForceDirectory, 'salesForceCount' => $salesForceCount, 'denominations' => $denominations, 'operators' => self::OPERATORS, 'categories' => self::CATEGORIES, 'catalogProducts' => $catalogProducts, 'turnover' => 0, 'profit' => 0, 'validityHeaders' => [1, 2, 3, 5, 7, 14, 28], 'mailConfigured' => config('mail.default') !== 'log' && filter_var(config('mail.from.address'), FILTER_VALIDATE_EMAIL)]);
+        return view('admin.dashboard', [...$analytics, 'page' => $page, 'sfRanking' => $sfRanking, 'transactions' => $transactions, 'outlets' => $outlets, 'outletDirectory' => $outletDirectory, 'outletRegions' => config('outlet_regions', []), 'salesForceDirectory' => $salesForceDirectory, 'salesForceCount' => $salesForceCount, 'denominations' => $denominations, 'operators' => self::OPERATORS, 'categories' => self::CATEGORIES, 'catalogProducts' => $catalogProducts, 'turnover' => 0, 'profit' => 0, 'validityHeaders' => [1, 2, 3, 5, 7, 14, 28], 'mailConfigured' => config('mail.default') !== 'log' && filter_var(config('mail.from.address'), FILTER_VALIDATE_EMAIL)]);
     }
 
     public function storeSalesForce(Request $request)
@@ -600,6 +605,59 @@ class AdminController extends Controller
         $request->merge(['nominal' => preg_replace('/\D/', '', (string) $request->nominal)]);
 
         return $request->validate(['operator' => ['required', Rule::in(self::OPERATORS)], 'category' => ['required', Rule::in(self::CATEGORIES)], 'nominal' => ['required', 'integer', 'min:1000', 'max:10000000']]);
+    }
+
+    private function sfRankingQuery()
+    {
+        return DB::select("
+            WITH outlet_transaction_stats AS (
+                SELECT
+                    ou.outlet_id,
+                    COUNT(t.id)                               AS total_transaksi,
+                    COALESCE(SUM(t.price), 0)                 AS total_omzet,
+                    COALESCE(SUM(t.price - t.cost_price), 0)  AS total_profit,
+                    COUNT(CASE
+                        WHEN t.created_at >= NOW() - INTERVAL '10 days' THEN 1
+                    END)                                      AS trx_10_hari
+                FROM users ou
+                INNER JOIN transactions t ON t.user_id = ou.id
+                WHERE ou.outlet_id IS NOT NULL
+                GROUP BY ou.outlet_id
+            ),
+            sf_summary AS (
+                SELECT
+                    o.sf_user_id,
+                    COUNT(o.id)                                                   AS total_outlet,
+                    SUM(CASE WHEN ots.trx_10_hari >= 4 THEN 1 ELSE 0 END)         AS total_outlet_active,
+                    SUM(CASE WHEN o.approved_at IS NOT NULL THEN 1 ELSE 0 END)    AS total_outlet_approved,
+                    COALESCE(SUM(ots.total_transaksi), 0)                         AS total_transaksi,
+                    COALESCE(SUM(ots.total_omzet), 0)                             AS total_omzet,
+                    COALESCE(SUM(ots.total_profit), 0)                            AS total_profit,
+                    MIN(o.created_at)                                             AS first_outlet_registered_at,
+                    MAX(o.created_at)                                             AS last_outlet_registered_at
+                FROM outlets o
+                LEFT JOIN outlet_transaction_stats ots ON ots.outlet_id = o.id
+                WHERE o.sf_user_id IS NOT NULL
+                GROUP BY o.sf_user_id
+            )
+            SELECT
+                u.sf_code,
+                u.name                                      AS sf_name,
+                COALESCE(ss.total_outlet, 0)                AS total_outlet,
+                COALESCE(ss.total_outlet_active, 0)         AS total_outlet_active,
+                COALESCE(ss.total_outlet_approved, 0)       AS total_outlet_approved,
+                COALESCE(ss.total_transaksi, 0)             AS total_transaksi,
+                COALESCE(ss.total_omzet, 0)                 AS total_omzet,
+                COALESCE(ss.total_profit, 0)                AS total_profit,
+                ss.first_outlet_registered_at,
+                ss.last_outlet_registered_at
+            FROM users u
+            LEFT JOIN sf_summary ss ON ss.sf_user_id = u.id
+            WHERE u.role = 'sf'
+              AND u.sf_code IS NOT NULL
+              AND ss.first_outlet_registered_at IS NOT NULL
+            ORDER BY ss.total_outlet_active DESC, ss.total_outlet DESC, ss.total_transaksi DESC
+        ");
     }
 
     private function guard(Request $request): void

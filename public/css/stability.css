@@ -3274,11 +3274,20 @@ button.secondary-action:disabled,
     }
 }
 
+.sidebar-brand-header,
+.sidebar-user-footer {
+    display: none !important;
+}
+
 /* Desktop detail pages use the full workspace beside the navigation rail. */
 @media (min-width: 701px) {
 
     /* Desktop workspace: every customer-facing page follows the same
        1180px content rail used by the Stok Produk landing page. */
+    body:has(.mobile-nav.rich-nav) {
+        padding-left: 228px !important;
+    }
+
     body:has(.mobile-nav.rich-nav) .app-shell>.topbar {
         padding-right: max(28px, calc((100% - 1180px) / 2 + 28px)) !important;
         padding-left: max(28px, calc((100% - 1180px) / 2 + 28px)) !important;
@@ -3305,9 +3314,239 @@ button.secondary-action:disabled,
         padding-left: max(28px, calc((100% - 1180px) / 2 + 28px)) !important;
     }
 
+    /* Desktop Sidebar Shell */
+    .mobile-nav.rich-nav {
+        position: fixed !important;
+        z-index: 80 !important;
+        left: 0 !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: 228px !important;
+        height: 100vh !important;
+        padding: 24px 14px 20px !important;
+        background: linear-gradient(180deg, #252033 0%, #2b2539 50%, #1f1b2b 100%) !important;
+        border: 0 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+        border-radius: 0 !important;
+        box-shadow: 12px 0 35px rgba(17, 13, 26, 0.24) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
+        gap: 6px !important;
+        box-sizing: border-box !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
+
+    .mobile-nav.rich-nav:before {
+        display: none !important;
+    }
+
+    /* Brand Header on Desktop */
+    .sidebar-brand-header {
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px !important;
+        padding: 2px 6px 18px !important;
+        margin-bottom: 10px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-sizing: border-box !important;
+    }
+
+    .sidebar-brand-mark {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 11px !important;
+        background: linear-gradient(145deg, #ffd97d, #f2b84b) !important;
+        color: #272132 !important;
+        font: 800 20px 'Manrope', 'DM Sans', sans-serif !important;
+        display: grid !important;
+        place-items: center !important;
+        box-shadow: 0 4px 14px rgba(242, 184, 75, 0.28) !important;
+        flex: 0 0 38px !important;
+        line-height: 1 !important;
+    }
+
+    .sidebar-brand-info {
+        display: flex !important;
+        flex-direction: column !important;
+        min-width: 0 !important;
+    }
+
+    .sidebar-brand-name {
+        font-family: 'Manrope', 'DM Sans', sans-serif !important;
+        font-size: 17px !important;
+        font-weight: 800 !important;
+        color: #ffffff !important;
+        letter-spacing: -0.02em !important;
+        line-height: 1.2 !important;
+    }
+
+    .sidebar-brand-outlet {
+        font-family: 'DM Sans', system-ui, sans-serif !important;
+        font-size: 11.5px !important;
+        font-weight: 500 !important;
+        color: #aba4b7 !important;
+        letter-spacing: 0 !important;
+        margin-top: 2px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        max-width: 140px !important;
+    }
+
+    /* Menu Link Typography & Layout */
+    .mobile-nav.rich-nav > a {
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        min-height: 48px !important;
+        padding: 9px 12px !important;
+        border-radius: 12px !important;
+        border: 1px solid transparent !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 12px !important;
+        box-sizing: border-box !important;
+        color: #b7b0c3 !important;
+        text-decoration: none !important;
+        transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        cursor: pointer !important;
+    }
+
+    .mobile-nav.rich-nav > a > b {
+        width: 34px !important;
+        height: 34px !important;
+        flex: 0 0 34px !important;
+        border-radius: 10px !important;
+        display: grid !important;
+        place-items: center !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: #b7b0c3 !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        transition: all 0.18s ease !important;
+    }
+
+    .mobile-nav.rich-nav > a > b svg {
+        width: 18px !important;
+        height: 18px !important;
+        stroke: currentColor !important;
+        fill: none !important;
+        stroke-width: 2 !important;
+        stroke-linecap: round !important;
+        stroke-linejoin: round !important;
+    }
+
+    .mobile-nav.rich-nav > a > span,
+    .rich-nav a > span,
+    .rich-nav a {
+        font-family: 'DM Sans', Inter, system-ui, sans-serif !important;
+        font-size: 13.5px !important;
+        font-weight: 600 !important;
+        line-height: 1.3 !important;
+        letter-spacing: -0.01em !important;
+        color: inherit !important;
+        max-width: none !important;
+        text-align: left !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        flex: 1 !important;
+    }
+
+    /* Hover State */
+    .mobile-nav.rich-nav > a:hover {
+        background: rgba(255, 255, 255, 0.06) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        color: #ffffff !important;
+        transform: translateX(2px) !important;
+    }
+
+    .mobile-nav.rich-nav > a:hover > b {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-color: rgba(255, 255, 255, 0.14) !important;
+        color: #ffffff !important;
+    }
+
+    /* Active State */
+    .mobile-nav.rich-nav > a.active {
+        background: linear-gradient(90deg, rgba(245, 201, 95, 0.18) 0%, rgba(245, 201, 95, 0.05) 100%) !important;
+        border-color: rgba(245, 201, 95, 0.28) !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+    }
+
+    .mobile-nav.rich-nav > a.active > span {
+        font-weight: 700 !important;
+        color: #ffffff !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .mobile-nav.rich-nav > a.active > b {
+        background: linear-gradient(135deg, #ffd97d, #f2b84b) !important;
+        border-color: rgba(255, 255, 255, 0.25) !important;
+        color: #272132 !important;
+        box-shadow: 0 3px 12px rgba(242, 184, 75, 0.35) !important;
+    }
+
+    /* User / Role Footer */
+    .sidebar-user-footer {
+        margin-top: auto !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        padding: 10px 12px !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.07) !important;
+        border-radius: 12px !important;
+        box-sizing: border-box !important;
+    }
+
+    .sidebar-user-avatar {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 9px !important;
+        background: linear-gradient(135deg, #443b59, #332b43) !important;
+        color: #eeddb0 !important;
+        font: 800 13px 'Manrope', 'DM Sans', sans-serif !important;
+        display: grid !important;
+        place-items: center !important;
+        flex: 0 0 32px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        line-height: 1 !important;
+    }
+
+    .sidebar-user-meta {
+        display: flex !important;
+        flex-direction: column !important;
+        min-width: 0 !important;
+    }
+
+    .sidebar-user-name {
+        font-family: 'DM Sans', system-ui, sans-serif !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        color: #ffffff !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        max-width: 140px !important;
+        line-height: 1.2 !important;
+    }
+
+    .sidebar-user-role {
+        font-family: 'DM Sans', system-ui, sans-serif !important;
+        font-size: 10px !important;
+        color: #a49db2 !important;
+        font-weight: 500 !important;
+        margin-top: 2px !important;
+        letter-spacing: 0.02em !important;
+    }
+
     .service-picker-open #provider-picker {
         right: 0 !important;
-        left: 210px !important;
+        left: 228px !important;
         width: auto !important;
         max-width: none !important;
         margin: 0 !important;
@@ -3324,7 +3563,7 @@ button.secondary-action:disabled,
 
     .flow-screen {
         right: 0 !important;
-        left: 210px !important;
+        left: 228px !important;
         width: auto !important;
         max-width: none !important;
         margin: 0 !important;
@@ -3341,7 +3580,7 @@ button.secondary-action:disabled,
     .flow-screen .selection-bar,
     .flow-screen .confirm-actions {
         right: 0;
-        left: 210px;
+        left: 228px;
         width: auto;
         max-width: none;
         transform: none;
