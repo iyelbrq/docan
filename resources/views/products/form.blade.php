@@ -1,6 +1,8 @@
 @extends('layouts.app')
 @section('title',($product->exists?'Edit':'Tambah').' Produk — Docan') @section('body-class','pos-body')
 @section('content')
+@php($identityLocked = $product->exists || request()->boolean('variant'))
+@php($isVoucherProduct = $isVoucherProduct ?? ($product->exists && in_array($product->category, ['Voucher Internet','Kartu Paket']) && !in_array($product->operator, ['AKSESORIS','HANDPHONE'])))
 @push('styles')
 <style>
 .product-photo-field{gap:8px}
@@ -47,14 +49,33 @@
             box.style.opacity = remove.checked ? '.45' : '';
         });
     }
+
+    var isVoucher = {{ $isVoucherProduct ? 'true' : 'false' }};
+    if (isVoucher) {
+        var ensurePackageVisible = function () {
+            var pkg = document.getElementById('package-builder');
+            var quota = document.getElementById('quota_gb');
+            var validity = document.getElementById('validity_days');
+            if (pkg) pkg.hidden = false;
+            if (quota) quota.disabled = false;
+            if (validity) validity.disabled = false;
+        };
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', ensurePackageVisible);
+        } else {
+            ensurePackageVisible();
+        }
+        window.addEventListener('load', ensurePackageVisible);
+        setTimeout(ensurePackageVisible, 50);
+        setTimeout(ensurePackageVisible, 250);
+        setTimeout(ensurePackageVisible, 600);
+    }
 })();
 </script>
 @endpush
 @php($returnParams = array_filter(['group'=>request('return_group',request('group')),'operator'=>request('return_operator',request('operator'))]))
 <div class="app-shell product-page"><header class="topbar"><a href="{{ route('products.index',$returnParams) }}" class="back-btn">←</a><div class="brand"><div><b>{{ $product->exists ? 'Edit produk' : 'Tambah produk' }}</b><small>{{ auth()->user()->outlet?->name }}</small></div></div></header>
 <main class="product-form-main"><div class="page-title"><div><span class="eyebrow green">KATALOG OUTLET</span><h1>{{ $product->exists ? 'Perbarui produk' : (request()->boolean('variant') ? 'Harga baru' : 'Produk baru') }}</h1><p>{{ request()->boolean('variant') ? 'Buat stok dan harga terpisah tanpa mengubah produk lama.' : 'Produk ini hanya tersedia untuk outlet Anda.' }}</p></div></div>@if($errors->any())<div class="alert error">{{ $errors->first() }}</div>@endif
-@php($identityLocked = $product->exists || request()->boolean('variant'))
-@php($isVoucherProduct = $product->exists && in_array($product->category, ['Voucher Internet','Kartu Paket']) && !in_array($product->operator, ['AKSESORIS','HANDPHONE']))
 @php($operatorLocked = !$identityLocked && request()->boolean('locked') && in_array(request('operator'),$operators,true))
 @php($availableCategories = match(request('group')) {'provider'=>['Voucher Internet','Kartu Paket'],'recharge','wallet','bank'=>['Saldo Provider'],'accessory'=>['Aksesoris HP'],'phone'=>['Handphone'],default=>$categories})
 @php($costValue = old('cost_price', $product->exists ? $product->cost_price : ''))

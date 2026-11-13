@@ -535,9 +535,18 @@ class ProductController extends Controller
         $existingPackages = Product::where('outlet_id', auth()->user()->outlet_id)
             ->get(['id', 'operator', 'category', 'name', 'brand', 'quota_gb', 'validity_days', 'cost_price', 'account_number']);
 
-        return view('products.form', ['product' => $product, 'operators' => self::OPERATORS,
-            'categories' => self::CATEGORIES, 'validityDays' => self::VALIDITY_DAYS,
-            'existingPackages' => $existingPackages]);
+        $isVoucherProduct = $product->exists
+            && in_array($product->category, ['Voucher Internet', 'Kartu Paket'], true)
+            && ! in_array($product->operator, self::RETAIL_OPERATORS, true);
+
+        return view('products.form', [
+            'product' => $product,
+            'operators' => self::OPERATORS,
+            'categories' => self::CATEGORIES,
+            'validityDays' => self::VALIDITY_DAYS,
+            'existingPackages' => $existingPackages,
+            'isVoucherProduct' => $isVoucherProduct,
+        ]);
     }
 
     private function authorizeOutlet(Request $request, Product $product): void
